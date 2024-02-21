@@ -7,37 +7,28 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.PowerManager;
-import android.net.Uri;
-import android.service.notification.StatusBarNotification;
+import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
-import android.util.Log;
 
-import com.google.firebase.messaging.FirebaseMessagingService;
+import com.adobe.phonegap.push.FCMService;
 import com.google.firebase.messaging.RemoteMessage;
+import com.phonegap.plugins.twiliovoice.TwilioVoicePlugin;
 import com.twilio.voice.CallException;
 import com.twilio.voice.CallInvite;
 import com.twilio.voice.CancelledCallInvite;
 import com.twilio.voice.MessageListener;
 import com.twilio.voice.Voice;
 
-import static android.R.attr.data;
-import static android.R.attr.packageNames;
-
-import com.phonegap.plugins.twiliovoice.SoundPoolManager;
-import com.phonegap.plugins.twiliovoice.TwilioVoicePlugin;
-
 import java.util.Map;
 
-public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
-
+public class VoiceFirebaseMessagingService extends FCMService {
     private static final String TAG = "VoiceFCMService";
     private static final String NOTIFICATION_ID_KEY = "NOTIFICATION_ID";
     private static final String CALL_SID_KEY = "CALL_SID";
@@ -49,6 +40,8 @@ public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
     public void onCreate() {
         super.onCreate();
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        Log.i(TAG, "Twilio voice service created");
     }
 
     @Override
@@ -60,6 +53,11 @@ public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+    }
+
     /**
      * Called when message is received.
      *
@@ -67,6 +65,8 @@ public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
      */
     @Override
     public void onMessageReceived(RemoteMessage remoteMessage) {
+        super.onMessageReceived(remoteMessage);
+
         Log.d(TAG, "Received onMessageReceived()");
         Log.d(TAG, "Bundle data: " + remoteMessage.getData());
         Log.d(TAG, "From: " + remoteMessage.getFrom());
@@ -101,7 +101,7 @@ public class VoiceFirebaseMessagingService extends FirebaseMessagingService {
         intent.putExtra(TwilioVoicePlugin.INCOMING_CALL_INVITE, callInvite);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         PendingIntent pendingIntent =
-                PendingIntent.getActivity(this, notificationId, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+                PendingIntent.getActivity(this, notificationId, intent, PendingIntent.FLAG_CANCEL_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         Bundle extras = new Bundle();
         extras.putInt(NOTIFICATION_ID_KEY, notificationId);
