@@ -201,6 +201,17 @@ static NSString *const kTwimlParamTo = @"To";
     if (self.callInvite && self.call && self.call.state == TVOCallStateRinging) {
         [self.callInvite reject];
         self.callInvite = nil;
+    } else if (self.call && self.enableCallKit) {
+        CXEndCallAction *endAction = [[CXEndCallAction alloc] initWithCallUUID:self.call.uuid];
+        CXTransaction *transaction = [[CXTransaction alloc] initWithAction:endAction];
+        
+        [self.callKitCallController requestTransaction:transaction completion:^(NSError * _Nullable error) {
+            if (error != nil) {
+                NSLog(@"Spot end call: Error");
+            } else {
+                NSLog(@"Spot end call: Success!");
+            }
+        }];
     } else if (self.call) {
         [self.call disconnect];
     }
@@ -208,8 +219,22 @@ static NSString *const kTwimlParamTo = @"To";
 
 - (void) acceptCallInvite:(CDVInvokedUrlCommand*)command {
     if (self.callInvite) {
-        [self.callInvite acceptWithDelegate:self];
+        if (self.enableCallKit) {
+            CXAnswerCallAction *answerAction = [[CXAnswerCallAction alloc] initWithCallUUID:self.callInvite.uuid];
+            CXTransaction *transaction = [[CXTransaction alloc] initWithAction:answerAction];
+            
+            [self.callKitCallController requestTransaction:transaction completion:^(NSError * _Nullable error) {
+                if (error != nil) {
+                    NSLog(@"Spot answer call: Error");
+                } else {
+                    NSLog(@"Spot answer call: Success!");
+                }
+            }];
+        } else {
+            [self.callInvite acceptWithDelegate:self];
+        }
     }
+
     if ([self.ringtonePlayer isPlaying]) {
         //pause ringtone
         [self.ringtonePlayer pause];
@@ -218,8 +243,22 @@ static NSString *const kTwimlParamTo = @"To";
 
 - (void) rejectCallInvite: (CDVInvokedUrlCommand*)command {
     if (self.callInvite) {
-        [self.callInvite reject];
+        if (self.enableCallKit) {
+            CXEndCallAction *rejectAction = [[CXEndCallAction alloc] initWithCallUUID:self.callInvite.uuid];
+            CXTransaction *transaction = [[CXTransaction alloc] initWithAction:rejectAction];
+            
+            [self.callKitCallController requestTransaction:transaction completion:^(NSError * _Nullable error) {
+                if (error != nil) {
+                    NSLog(@"Spot reject call: Error");
+                } else {
+                    NSLog(@"Spot reject call: Success!");
+                }
+            }];
+        } else {
+            [self.callInvite reject];
+        }
     }
+
     if ([self.ringtonePlayer isPlaying]) {
         //pause ringtone
         [self.ringtonePlayer pause];
